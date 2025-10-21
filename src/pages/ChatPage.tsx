@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import { useChat } from '../hooks/useChat'
-import { useAuthContext } from '../auth/AuthContext'
+// import { useAuthContext } from '../auth/AuthContext'
 import { Header } from '../components/Header'
 import { ChatMessage } from '../components/ChatMessage'
 import { ChatInput } from '../components/ChatInput'
@@ -9,7 +9,8 @@ import { MessageSquare, Trash2, Bot } from 'lucide-react'
 import { MESSAGES } from '../utils/constants'
 
 export default function ChatPage() {
-  const { user } = useAuthContext()
+  // Temporarily bypass authentication for demo purposes
+  // const { user } = useAuthContext()
   const { messages, isLoading, sendMessage, clearMessages } = useChat()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -22,9 +23,8 @@ export default function ChatPage() {
   }, [messages])
 
   const handleSendMessage = (content: string) => {
-    if (user) {
-      sendMessage({ content, userId: user.id })
-    }
+    // Use demo user ID for demo purposes
+    sendMessage({ content, userId: 'demo-user' })
   }
 
   return (

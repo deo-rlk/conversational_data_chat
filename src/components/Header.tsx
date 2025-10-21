@@ -1,7 +1,7 @@
 import React from 'react'
-import { useAuthContext } from '../auth/AuthContext'
+// import { useAuthContext } from '../auth/AuthContext'
 import { Button } from './Button'
-import { LogOut, MessageSquare } from 'lucide-react'
+import { LogOut, MessageSquare, User } from 'lucide-react'
 
 interface HeaderProps {
   title?: string
@@ -9,7 +9,14 @@ interface HeaderProps {
 }
 
 export function Header({ title = 'Looker Conversational Interface', showLogout = true }: HeaderProps) {
-  const { user, logout } = useAuthContext()
+  // Temporarily bypass authentication for demo purposes
+  // const { user, logout } = useAuthContext()
+
+  const handleLogout = () => {
+    // Clear any stored data and redirect to welcome page
+    localStorage.clear()
+    window.location.href = '/'
+  }
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
@@ -20,21 +27,19 @@ export function Header({ title = 'Looker Conversational Interface', showLogout =
           </div>
           <div>
             <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
-            {user && (
-              <p className="text-sm text-gray-500">Olá, {user.name}</p>
-            )}
+            <p className="text-sm text-gray-500">Usuário Demo</p>
           </div>
         </div>
         
-        {showLogout && user && (
+        {showLogout && (
           <Button
             variant="outline"
             size="sm"
-            onClick={logout}
+            onClick={handleLogout}
             className="flex items-center space-x-2"
           >
             <LogOut className="w-4 h-4" />
-            <span>Sair</span>
+            <span>Reiniciar</span>
           </Button>
         )}
       </div>

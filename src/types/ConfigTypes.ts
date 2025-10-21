@@ -3,6 +3,7 @@ export interface LookerConfig {
   clientId: string
   clientSecret: string
   ssl: boolean // Sempre false
+  useDemo?: boolean
 }
 
 export interface ConfigState {

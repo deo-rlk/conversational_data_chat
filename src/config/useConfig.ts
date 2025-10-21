@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { LookerConfig, ConfigState, ConfigValidation } from '../types/ConfigTypes'
 import { lookerService } from '../services/lookerService'
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import { websocketService, WebSocketMessage } from '../services/websocketService'
 
 export function useConfig() {
   const [config, setConfig] = useLocalStorage<LookerConfig | null>('looker_config', null)
@@ -53,24 +54,63 @@ export function useConfig() {
     setState(prev => ({ ...prev, isLoading: true, error: undefined }))
 
     try {
-      const isConnected = await lookerService.connectToMCP(configWithSSL)
-      
-      if (isConnected) {
-        setConfig(configWithSSL)
-        setState({
-          config: configWithSSL,
-          isLoading: false,
-          error: undefined,
-          isConnected: true,
+      // Try to connect to WebSocket for real-time updates
+      try {
+        await websocketService.connect({
+          onStatusUpdate: (message: WebSocketMessage) => {
+            console.log('WebSocket status update:', message)
+            // You can emit events or update state here if needed
+          },
+          onError: (error: string) => {
+            setState(prev => ({
+              ...prev,
+              isLoading: false,
+              error: error,
+            }))
+          },
+          onComplete: () => {
+            setConfig(configWithSSL)
+            setState({
+              config: configWithSSL,
+              isLoading: false,
+              error: undefined,
+              isConnected: true,
+            })
+          }
         })
+
+        // Start configuration process
+        websocketService.startConfiguration(configWithSSL)
+        
         return true
-      } else {
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-          error: 'Falha na conexão com o Looker',
-        }))
-        return false
+      } catch (wsError) {
+        console.warn('WebSocket connection failed, using fallback mode:', wsError)
+        
+        // Fallback: simulate configuration without backend
+        console.log('WebSocket connection failed, using fallback mode')
+        
+        if (configWithSSL.useDemo) {
+          // For demo mode, simulate success immediately
+          console.log('Demo mode: simulating configuration success')
+          setTimeout(() => {
+            setConfig(configWithSSL)
+            setState({
+              config: configWithSSL,
+              isLoading: false,
+              error: undefined,
+              isConnected: true,
+            })
+          }, 2000)
+          return true
+        } else {
+          // For real credentials, show error about backend
+          setState(prev => ({
+            ...prev,
+            isLoading: false,
+            error: 'Backend não está rodando. Para usar credenciais reais, inicie o servidor Python com: python backend/simple_ws_backend.py',
+          }))
+          return false
+        }
       }
     } catch (error) {
       setState(prev => ({

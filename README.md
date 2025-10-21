@@ -36,6 +36,8 @@ src/
 
 ## 🛠️ Instalação
 
+### Frontend (React)
+
 1. **Clone o repositório**
    ```bash
    git clone <repository-url>
@@ -55,25 +57,58 @@ src/
    Edite o arquivo `.env` com suas credenciais:
    ```env
    VITE_GOOGLE_CLIENT_ID=seu_google_client_id
-   VITE_LOOKER_URL=https://seu-looker.exemplo.com
-   VITE_LOOKER_CLIENT_ID=seu_looker_client_id
-   VITE_LOOKER_CLIENT_SECRET=seu_looker_client_secret
    ```
 
-4. **Execute o projeto**
+### Backend (Python)
+
+4. **Instale as dependências Python**
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   ```
+
+5. **Configure as variáveis de ambiente**
+   ```bash
+   export ENCRYPTION_KEY="your-secret-encryption-key-here"
+   ```
+
+### Execução
+
+6. **Inicie o backend**
+   ```bash
+   # Windows
+   start-backend.bat
+   
+   # Linux/Mac
+   ./start-backend.sh
+   ```
+
+7. **Inicie o frontend**
    ```bash
    npm run dev
    ```
 
-5. **Acesse a aplicação**
-   Abra [http://localhost:3000](http://localhost:3000) no seu navegador
+8. **Acesse a aplicação**
+   - Frontend: [http://localhost:3000](http://localhost:3000)
+   - Backend: [http://localhost:8000](http://localhost:8000)
 
-## 🔄 Fluxo de Uso
+## 🔄 Fluxo de Uso (Modo Demo)
 
-1. **Login**: Faça login com sua conta Google
-2. **Configuração**: Insira as credenciais do Looker
-3. **Conexão**: Aguarde a conexão com o MCP
-4. **Chat**: Comece a conversar com seus dados
+1. **Página de Boas-vindas**: Interface de demonstração
+2. **Escolha do Modo**: 
+   - **Credenciais Reais**: Insira suas credenciais do Looker
+   - **Modo Demo**: Teste com dados simulados (recomendado)
+3. **Configuração Progressiva**: 
+   - URL do Looker (se não for modo demo)
+   - Client ID (se não for modo demo)
+   - Client Secret (se não for modo demo)
+4. **Configuração Automática**: 
+   - Instalação do Gemini CLI
+   - Configuração do MCP Looker
+   - Teste de conexão
+5. **Chat**: Comece a conversar com seus dados
+
+> **Nota**: A autenticação Google foi temporariamente desabilitada para facilitar os testes. Use o modo demo para testar todas as funcionalidades.
 
 ## 🛠️ Scripts Disponíveis
 
