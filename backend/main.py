@@ -25,17 +25,20 @@ app.add_middleware(
 ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY", Fernet.generate_key())
 cipher_suite = Fernet(ENCRYPTION_KEY)
 
+
 class LookerConfig(BaseModel):
     url: str
     client_id: str
     client_secret: str
     use_demo: bool = False
 
+
 class ConfigStatus(BaseModel):
     status: str  # 'loading', 'installing', 'done', 'error'
     message: str
     progress: int
     step: str
+
 
 class ConnectionManager:
     def __init__(self):
@@ -59,7 +62,9 @@ class ConnectionManager:
                 # Remove disconnected connections
                 self.active_connections.remove(connection)
 
+
 manager = ConnectionManager()
+
 
 def encrypt_credentials(config: LookerConfig) -> str:
     """Encrypt Looker credentials for secure storage"""
@@ -67,10 +72,11 @@ def encrypt_credentials(config: LookerConfig) -> str:
         "url": config.url,
         "client_id": config.client_id,
         "client_secret": config.client_secret,
-        "use_demo": config.use_demo
+        "use_demo": config.use_demo,
     }
     encrypted_data = cipher_suite.encrypt(json.dumps(data).encode())
     return base64.b64encode(encrypted_data).decode()
+
 
 def decrypt_credentials(encrypted_data: str) -> Dict[str, Any]:
     """Decrypt Looker credentials"""
@@ -81,9 +87,17 @@ def decrypt_credentials(encrypted_data: str) -> Dict[str, Any]:
     except Exception as e:
         raise ValueError(f"Failed to decrypt credentials: {e}")
 
-async def run_command_with_output(command: str, cwd: str = None) -> tuple[int, str, str]:
+
+async def run_command_with_output(
+    command: str, cwd: str = None, env: dict = None
+) -> tuple[int, str, str]:
     """Run command and capture output"""
     try:
+        # Merge with existing environment if env is provided
+        process_env = os.environ.copy()
+        if env:
+            process_env.update(env)
+
         if sys.platform == "win32":
             # Windows: hide console window
             process = subprocess.Popen(
@@ -93,7 +107,8 @@ async def run_command_with_output(command: str, cwd: str = None) -> tuple[int, s
                 stderr=subprocess.PIPE,
                 text=True,
                 cwd=cwd,
-                creationflags=subprocess.CREATE_NO_WINDOW
+                env=process_env,
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
         else:
             # Unix-like systems
@@ -103,161 +118,195 @@ async def run_command_with_output(command: str, cwd: str = None) -> tuple[int, s
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                cwd=cwd
+                cwd=cwd,
+                env=process_env,
             )
-        
+
         stdout, stderr = process.communicate()
         return process.returncode, stdout, stderr
     except Exception as e:
         return -1, "", str(e)
 
+
 async def install_gemini_cli(websocket: WebSocket):
     """Install Gemini CLI"""
     try:
         await manager.send_personal_message(
-            json.dumps({
-                "status": "installing",
-                "message": "Instalando Gemini CLI...",
-                "progress": 10,
-                "step": "gemini_install"
-            }),
-            websocket
+            json.dumps(
+                {
+                    "status": "installing",
+                    "message": "Instalando Gemini CLI...",
+                    "progress": 10,
+                    "step": "gemini_install",
+                }
+            ),
+            websocket,
         )
-        
+
         # Install Gemini CLI
         returncode, stdout, stderr = await run_command_with_output(
             "npx https://github.com/google-gemini/gemini-cli"
         )
-        
+
         if returncode != 0:
             raise Exception(f"Failed to install Gemini CLI: {stderr}")
-        
+
         await manager.send_personal_message(
-            json.dumps({
-                "status": "loading",
-                "message": "Gemini CLI instalado com sucesso",
-                "progress": 30,
-                "step": "gemini_install"
-            }),
-            websocket
+            json.dumps(
+                {
+                    "status": "loading",
+                    "message": "Gemini CLI instalado com sucesso",
+                    "progress": 30,
+                    "step": "gemini_install",
+                }
+            ),
+            websocket,
         )
-        
+
         return True
     except Exception as e:
         await manager.send_personal_message(
-            json.dumps({
-                "status": "error",
-                "message": f"Erro ao instalar Gemini CLI: {str(e)}",
-                "progress": 0,
-                "step": "gemini_install"
-            }),
-            websocket
+            json.dumps(
+                {
+                    "status": "error",
+                    "message": f"Erro ao instalar Gemini CLI: {str(e)}",
+                    "progress": 0,
+                    "step": "gemini_install",
+                }
+            ),
+            websocket,
         )
         return False
 
+
 async def configure_looker_mcp(config: LookerConfig, websocket: WebSocket):
-    """Configure Looker MCP with credentials"""
+    """Configure Looker MCP with credentials and test the connection."""
     try:
         await manager.send_personal_message(
-            json.dumps({
-                "status": "loading",
-                "message": "Configurando credenciais do Looker...",
-                "progress": 50,
-                "step": "looker_config"
-            }),
-            websocket
+            json.dumps(
+                {
+                    "status": "loading",
+                    "message": "Configurando e testando credenciais do Looker...",
+                    "progress": 50,
+                    "step": "looker_config",
+                }
+            ),
+            websocket,
         )
-        
-        # Set environment variables for Looker MCP
+
         env_vars = {
             "LOOKER_BASE_URL": config.url,
             "LOOKER_CLIENT_ID": config.client_id,
             "LOOKER_CLIENT_SECRET": config.client_secret,
-            "LOOKER_VERIFY_SSL": "false"
+            "LOOKER_VERIFY_SSL": "false",
         }
-        
-        # Store encrypted credentials
-        encrypted_creds = encrypt_credentials(config)
-        
-        # In a real implementation, you would:
-        # 1. Store encrypted credentials in a secure database
-        # 2. Configure the MCP server with these credentials
-        # 3. Test the connection
-        
+
+        # Test the connection by trying to fetch models
         await manager.send_personal_message(
-            json.dumps({
-                "status": "loading",
-                "message": "Testando conexão com Looker...",
-                "progress": 70,
-                "step": "looker_test"
-            }),
-            websocket
+            json.dumps(
+                {
+                    "status": "loading",
+                    "message": "Testando conexão com a API do Looker...",
+                    "progress": 70,
+                    "step": "looker_test",
+                }
+            ),
+            websocket,
         )
-        
-        # Simulate connection test
-        await asyncio.sleep(2)
-        
+
+        # Use the gemini cli to test the connection
+        returncode, stdout, stderr = await run_command_with_output(
+            "gemini looker get-models", env=env_vars
+        )
+
+        if returncode != 0:
+            error_message = stderr or stdout
+            await manager.send_personal_message(
+                json.dumps(
+                    {
+                        "status": "error",
+                        "message": f"Falha na conexão com o Looker: {error_message}",
+                        "progress": 0,
+                        "step": "looker_test",
+                    }
+                ),
+                websocket,
+            )
+            return False
+
         await manager.send_personal_message(
-            json.dumps({
-                "status": "loading",
-                "message": "Conexão estabelecida com sucesso",
-                "progress": 90,
-                "step": "looker_test"
-            }),
-            websocket
+            json.dumps(
+                {
+                    "status": "loading",
+                    "message": "Conexão com o Looker estabelecida com sucesso!",
+                    "progress": 90,
+                    "step": "looker_test",
+                }
+            ),
+            websocket,
         )
-        
+
         return True
     except Exception as e:
         await manager.send_personal_message(
-            json.dumps({
-                "status": "error",
-                "message": f"Erro ao configurar Looker: {str(e)}",
-                "progress": 0,
-                "step": "looker_config"
-            }),
-            websocket
+            json.dumps(
+                {
+                    "status": "error",
+                    "message": f"Erro inesperado ao configurar o Looker: {str(e)}",
+                    "progress": 0,
+                    "step": "looker_config",
+                }
+            ),
+            websocket,
         )
         return False
+
 
 async def setup_conversational_interface(websocket: WebSocket):
     """Setup conversational interface"""
     try:
         await manager.send_personal_message(
-            json.dumps({
-                "status": "loading",
-                "message": "Preparando interface conversacional...",
-                "progress": 95,
-                "step": "interface_setup"
-            }),
-            websocket
+            json.dumps(
+                {
+                    "status": "loading",
+                    "message": "Preparando interface conversacional...",
+                    "progress": 95,
+                    "step": "interface_setup",
+                }
+            ),
+            websocket,
         )
-        
+
         # Simulate interface setup
         await asyncio.sleep(1)
-        
+
         await manager.send_personal_message(
-            json.dumps({
-                "status": "done",
-                "message": "Configuração concluída com sucesso!",
-                "progress": 100,
-                "step": "complete"
-            }),
-            websocket
+            json.dumps(
+                {
+                    "status": "done",
+                    "message": "Configuração concluída com sucesso!",
+                    "progress": 100,
+                    "step": "complete",
+                }
+            ),
+            websocket,
         )
-        
+
         return True
     except Exception as e:
         await manager.send_personal_message(
-            json.dumps({
-                "status": "error",
-                "message": f"Erro ao preparar interface: {str(e)}",
-                "progress": 0,
-                "step": "interface_setup"
-            }),
-            websocket
+            json.dumps(
+                {
+                    "status": "error",
+                    "message": f"Erro ao preparar interface: {str(e)}",
+                    "progress": 0,
+                    "step": "interface_setup",
+                }
+            ),
+            websocket,
         )
         return False
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -266,48 +315,54 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             data = await websocket.receive_text()
             message = json.loads(data)
-            
+
             if message.get("type") == "start_config":
                 config = LookerConfig(**message.get("config", {}))
-                
+
                 # Start configuration process
                 success = True
-                
+
                 if not config.use_demo:
                     # Install Gemini CLI
                     if not await install_gemini_cli(websocket):
                         success = False
-                    
+
                     if success:
                         # Configure Looker MCP
                         if not await configure_looker_mcp(config, websocket):
                             success = False
-                
+
                 if success:
                     # Setup conversational interface
                     await setup_conversational_interface(websocket)
                 else:
                     await manager.send_personal_message(
-                        json.dumps({
-                            "status": "error",
-                            "message": "Falha na configuração. Tente novamente.",
-                            "progress": 0,
-                            "step": "error"
-                        }),
-                        websocket
+                        json.dumps(
+                            {
+                                "status": "error",
+                                "message": "Falha na configuração. Tente novamente.",
+                                "progress": 0,
+                                "step": "error",
+                            }
+                        ),
+                        websocket,
                     )
-                    
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
 
 @app.get("/")
 async def root():
     return {"message": "Looker Conversational Interface Backend"}
 
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
