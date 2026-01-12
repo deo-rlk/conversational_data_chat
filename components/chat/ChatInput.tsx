@@ -30,7 +30,7 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
 
   return (
     <form onSubmit={handleSubmit} className="p-2 sm:p-4">
-      <div className="flex gap-2 items-end">
+      <div className="flex gap-2 items-start">
         <div className="flex-1 min-w-0">
           <Input
             value={question}
