@@ -1,0 +1,47 @@
+{
+  "environments": [
+    {
+      "id": "env-ab",
+      "name": "A&B Inventory",
+      "instanceUrl": "https://looker.example.com",
+      "clientId": "mock_client_abc123",
+      "clientSecret": "***masked***",
+      "createdBy": "admin1",
+      "explores": ["ab_inventory"],
+      "users": ["user1"]
+    },
+    {
+      "id": "env-finance",
+      "name": "Finance Transactions",
+      "instanceUrl": "https://finance.looker.example.com",
+      "clientId": "mock_client_fin456",
+      "clientSecret": "***masked***",
+      "createdBy": "admin1",
+      "explores": ["finance_transactions"],
+      "users": []
+    }
+  ],
+  "users": [
+    {
+      "id": "user1",
+      "lookerUser": "joao.silva",
+      "role": "user",
+      "environments": ["env-ab"]
+    },
+    {
+      "id": "admin1",
+      "lookerUser": "admin@company.com",
+      "role": "admin",
+      "environments": ["env-ab", "env-finance"]
+    }
+  ],
+  "questionCounts": {
+    "user1": 3,
+    "admin1": 12
+  },
+  "availableExplores": [
+    "finance_transactions",
+    "ab_inventory",
+    "marketing_campaigns"
+  ]
+}
