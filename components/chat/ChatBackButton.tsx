@@ -13,7 +13,8 @@ export function ChatBackButton() {
     if (user?.role === 'admin') {
       router.push('/admin');
     } else {
-      router.push('/chat');
+      // Use browser back navigation for regular users
+      router.back();
     }
   };
 
